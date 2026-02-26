@@ -27,3 +27,13 @@ def test_score_guess_handles_positions():
 def test_format_guess_row_uses_non_letter_for_absent():
     game = Wordle(secret_word="apple")
     assert game._format_guess_row("grape") == "[-] [-] [a] [p] [E]"
+
+
+def test_print_game_instructions_shows_symbol_legend(capsys):
+    game = Wordle(secret_word="apple")
+    game._print_game_instructions()
+    out = capsys.readouterr().out
+    assert "How to read the grid:" in out
+    assert "[A] = correct letter in the correct position" in out
+    assert "[a] = letter is in the secret word but in a different position" in out
+    assert "[-] = letter is not in the secret word" in out

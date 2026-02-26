@@ -78,6 +78,13 @@ class Wordle:
 
         return " ".join(cells)
 
+
+    def _print_game_instructions(self) -> None:
+        print("\nHow to read the grid:")
+        print("[A] = correct letter in the correct position")
+        print("[a] = letter is in the secret word but in a different position")
+        print("[-] = letter is not in the secret word")
+
     def _print_attempt_grid(self) -> None:
         print("\nGuess Grid (Uppercase=correct, lowercase=present, '-'=absent)")
         for guess in self.attempts:
@@ -99,6 +106,7 @@ class Wordle:
         input("Press Enter to continue...")
 
     def PlayRound(self) -> None:
+        self._print_game_instructions()
         state = GameState.WORD_ENTRY
 
         while True:
