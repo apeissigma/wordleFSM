@@ -18,6 +18,7 @@ class Wordle:
     def __init__(self, secret_word: str | None = None) -> None:
         if secret_word is None:
             secret_word = random.choice(["apple", "grape", "slate", "crane", "flint"])
+
         self.secret_word = secret_word.lower()
         self.attempt_count = 0
         self.has_won = False
@@ -31,24 +32,65 @@ class Wordle:
         self.has_won = self._current_guess == self.secret_word
         return self.has_won
 
-    def _build_feedback(self, guess: str) -> tuple[list[str], list[str]]:
-        correct_positions = []
-        present_wrong_position = []
+    def _score_guess(self, guess: str) -> list[str]:
+        """
+        Returns per-letter status symbols:
+        - "C": correct letter, correct position
+        - "P": present letter, wrong position
+        - "A": absent letter
+        """
+        result = ["A"] * 5
+        secret_pool = list(self.secret_word)
 
-        for index, letter in enumerate(guess):
-            if letter == self.secret_word[index]:
-                correct_positions.append(letter)
-            elif letter in self.secret_word:
-                present_wrong_position.append(letter)
+        # First pass: exact matches
+        for i in range(5):
+            if guess[i] == self.secret_word[i]:
+                result[i] = "C"
+                secret_pool[i] = "*"
 
-        return correct_positions, present_wrong_position
+        # Second pass: present but misplaced
+        for i in range(5):
+            if result[i] == "C":
+                continue
+            letter = guess[i]
+            if letter in secret_pool:
+                result[i] = "P"
+                consumed_index = secret_pool.index(letter)
+                secret_pool[consumed_index] = "*"
+
+        return result
+
+    def _format_guess_row(self, guess: str) -> str:
+        statuses = self._score_guess(guess)
+        cells = []
+
+        for letter, status in zip(guess, statuses):
+            if status == "C":
+                # correct letter in correct spot
+                display_char = letter.upper()
+            elif status == "P":
+                # present, wrong spot
+                display_char = letter.lower()
+            else:
+                # absent letters use non-letter marker as requested
+                display_char = "-"
+            cells.append(f"[{display_char}]")
+
+        return " ".join(cells)
+
+    def _print_attempt_grid(self) -> None:
+        print("\nGuess Grid (Uppercase=correct, lowercase=present, '-'=absent)")
+        for guess in self.attempts:
+            print(self._format_guess_row(guess))
+
+        for _ in range(6 - len(self.attempts)):
+            print("[ ] [ ] [ ] [ ] [ ]")
 
     def Display(self) -> None:
         print("\n=== Round Summary ===")
-        for number, attempt in enumerate(self.attempts, start=1):
-            print(f"Attempt {number}: {attempt}")
-
+        self._print_attempt_grid()
         print(f"Total attempts used: {self.attempt_count}/6")
+
         if self.has_won:
             print("You Won.")
         else:
@@ -86,21 +128,14 @@ class Wordle:
 
             elif state == GameState.IS_WINNER:
                 winner = self.IsWinner()
-                if winner:
-                    state = GameState.DISPLAY
-                elif self.attempt_count >= 6:
+                if winner or self.attempt_count >= 6:
                     state = GameState.DISPLAY
                 else:
                     state = GameState.REVIEW
 
             elif state == GameState.REVIEW:
-                correct_positions, present_wrong_position = self._build_feedback(self._current_guess)
-                print("\nReview:")
-                print(f"Correct letter & position: {correct_positions if correct_positions else 'None'}")
-                print(
-                    "Letters present but wrong position: "
-                    f"{present_wrong_position if present_wrong_position else 'None'}"
-                )
+                print("\nReview Grid:")
+                print(self._format_guess_row(self._current_guess))
                 state = GameState.CONFIRM_AFTER_REVIEW
 
             elif state == GameState.CONFIRM_AFTER_REVIEW:

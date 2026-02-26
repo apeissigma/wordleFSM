@@ -19,8 +19,11 @@ def test_is_winner_false_when_guess_does_not_match_secret():
     assert game.IsWinner() is False
 
 
-def test_feedback_identifies_correct_and_present_letters():
+def test_score_guess_handles_positions():
     game = Wordle(secret_word="apple")
-    correct, present = game._build_feedback("grape")
-    assert correct == ["e"]
-    assert present == ["a", "p"]
+    assert game._score_guess("grape") == ["A", "A", "P", "P", "C"]
+
+
+def test_format_guess_row_uses_non_letter_for_absent():
+    game = Wordle(secret_word="apple")
+    assert game._format_guess_row("grape") == "[-] [-] [a] [p] [E]"
